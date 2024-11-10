@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to House Owner System</title>
+    <h1>WELCOME TO OUR HOME!!!</h1>
+    <style>
+        /* Dark Theme Styling */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #181a1b;
+            color: #ddd;
+            flex-direction: column; /* Aligns the header and chat box vertically */
+        }
+
+        /* Styling for H1 */
+        h1 {
+            color: #003366;  /* Dark blue color */
+            background-color: #f0f0f0;  /* Light background for H1 */
+            padding: 20px;
+            margin: 0;
+            text-align: center;
+            width: 100%;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            background: #2c2f33;
+            flex: 1;
+        }
+        .chat-box {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            border-bottom: 1px solid #555;
+        }
+        .chat-message {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            margin: 5px 0;
+            border-radius: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .chat-message img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        /* Applicant's message color (1st client) */
+        .applicant-message {
+            background-color: #808080;  /* Grey for applicant */
+            color: #fff;  /* White text */
+            align-self: flex-end;  /* Align to the right */
+        }
+
+        /* Owner's message color (2nd client) - blue */
+        .owner-message {
+            background-color: #4682b4;  /* Blue background color for owner */
+            color: #fff;
+            align-self: flex-start;  /* Owner's messages on the left */
+        }
+
+        .message-input-container {
+            display: flex;
+            padding: 10px;
+            background: #23272a;
+        }
+        .message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #40444b;
+            color: #ddd;
+        }
+        .send-button {
+            padding: 10px;
+            background-color: #7289da;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Chat Container -->
+    <div class="chat-container" id="chat-container">
+        <div class="chat-box" id="chat-box"></div>
+        <div class="message-input-container">
+            <input type="text" id="message-input" class="message-input" placeholder="Type a message...">
+            <button class="send-button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io(); // Connect to the socket server
+
+        let isApplicant = true;  // Initially, the first device is the applicant
+        let currentRole = 'applicant';  // Track current role
+
+        // Receive role assignment from the server
+        socket.on('assign role', (role) => {
+            currentRole = role;
+            isApplicant = (role === 'applicant');
+        });
+
+        // Function to send a message
+        function sendMessage() {
+            const messageInput = document.getElementById("message-input");
+            const messageText = messageInput.value.trim();
+            if (messageText) {
+                // Immediately display the message on the sender's screen
+                addMessage(messageText, isApplicant ? "applicant-message" : "owner-message");
+
+                // Send the message to the server
+                socket.emit('chat message', { message: messageText, isApplicant });
+                messageInput.value = ""; // Clear input after sending
+            }
+        }
+
+        // Function to add message to chat box
+        function addMessage(text, className) {
+            const chatBox = document.getElementById("chat-box");
+            const messageElement = document.createElement("div");
+            messageElement.className = `chat-message ${className}`;
+            
+            // Create image element for the message
+            const imgElement = document.createElement("img");
+            imgElement.src = className === "applicant-message" ? "https://res.cloudinary.com/davngvpno/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1731006829/applicant_sii0rt.png" : "https://res.cloudinary.com/davngvpno/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1731006797/owner_tfwfaa.jpg";  // Replace with your actual image URLs
+            imgElement.alt = className === "applicant-message" ? "Applicant" : "Owner";
+            
+            // Append image and message text to the message element
+            messageElement.appendChild(imgElement);
+            messageElement.appendChild(document.createTextNode(text));
+            
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to bottom when a new message is added
+        }
+
+        // Listen for incoming messages and update the chat box
+        socket.on('chat message', (msg) => {
+            // Display the message according to the role of the sender
+            addMessage(msg.message, msg.isApplicant ? "applicant-message" : "owner-message");
+        });
+
+    </script>
+
+</body>
+</html>
